@@ -8,27 +8,27 @@ class Entry
 	public $categories = array();
 	public $tags = array();
 	public $content = '';
+	public $post_status = 'publish';
 }
 
-class Hooks_metaweblog extends Hooks
+class Hooks_xmlrpc extends Hooks
 {
 	private $server;
 	
-	public function metaweblog__api()
+	public function xmlrpc__api()
 	{
 		// register the callback and process the POST request
 		$this->server = new IXR_Server(array(
-					// Metaweblog API
 					'metaWeblog.getPost' => array($this, 'getPost'),
 					'metaWeblog.newPost'  => array($this, 'newPost'),
 					'metaWeblog.editPost' => array($this, 'editPost'),
 					'metaWeblog.deletePost' => array($this, 'deletePost'),
 					'metaWeblog.getCategories' => array($this, 'getCategories'),
+					'mt.getCategoryList' => array($this, 'getCategories'),
 					'metaWeblog.getRecentPosts' => array($this, 'getRecentPosts'),
-					// Blogger API
 					'blogger.deletePost' => array($this, 'deletePost'),
-			
-					// WP API - I don't dare do it!
+					'mt.supportedTextFilters' => array($this, 'supportedTextFilters'),
+					'mt.getPostCategories' => array($this, 'getPostCategories'),
 				));
 	}
 	
@@ -50,6 +50,16 @@ class Hooks_metaweblog extends Hooks
 		return explode('#', $postid);
 	}
 	
+	private function getEntryStatus($entry) {
+		$status = 'publish';
+		
+ 		if (isset($entry['_is_draft']) && ($entry['_is_draft'] == 1)) {
+ 			$status = 'draft';
+ 		}
+	
+		return $status;
+	}
+	
 	// create the structure required for the MetaWeblog API
 	private function convertEntryToPost($entry) {
 		$post = array(
@@ -60,26 +70,31 @@ class Hooks_metaweblog extends Hooks
 			'permaLink' => $entry['permalink'],
 			'categories' => $entry['categories'],
 			'dateCreated' => date('Y-m-d', $entry['datestamp']),
+			'post_status' => $this->getEntryStatus($entry),
 		);	
 		return $post;
 	}
 	
-	private function convertPostToEntry($params) {
+	private function convertPostToEntry($post) {
 		$entry = new Entry();
 
 		// get the entry data
-		$entry->title = $params['title'];
+		$entry->title = $post['title'];
 		
 		if (isset($params['description'])) {
-			$entry->content = $params['description'];
+			$entry->content = $post['description'];
 		}
 		
-		if (isset($params['categories']) && (count($params['categories']) > 0)) {
-			$entry->categories = $params['categories'];
+		if (isset($post['categories']) && (count($post['categories']) > 0)) {
+			$entry->categories = $post['categories'];
 		}
 		
-		if (isset($params['tags']) && (count($params['tags']) > 0)) {
-			$entry->tags = $params['tags'];
+		if (isset($post['tags']) && (count($post['tags']) > 0)) {
+			$entry->tags = $post['tags'];
+		}
+		
+		if (isset($post['post_status'])) {
+			$entry->post_status = $post['post_status'];
 		}
 		
 		return $entry;
@@ -107,7 +122,7 @@ class Hooks_metaweblog extends Hooks
 		// parse out the page & the entry id
 		list($page, $slug) = $this->parsePostId($postid);
 		
-		// TODO - is this the right to do this???
+		// TODO - is this the right way to do this???
 		$url = Config::getSiteRoot() . $page . '/' . $slug;
 
 		//convert entry to MetaWeblog post
@@ -206,7 +221,8 @@ class Hooks_metaweblog extends Hooks
 		
 		File::delete($path);
 		// TODO: figure out how to throw an error back
-		//$this->server->error(404, 'Could not find post ' . $postid );
+		//$app = \Slim\Slim::getInstance();
+		//$app->halt(401, 'Uh oh!');
 		
 		return true;
 	}
@@ -226,12 +242,45 @@ class Hooks_metaweblog extends Hooks
 		foreach ($taxonomies as $taxonomy) {
 			$categories[$x++] = array(
 				'categoryId' => $taxonomy['name'],
-				'parentId' => '0',
 				'categoryName' => $taxonomy['name'],
 				);
 		}
 		
 		return $categories;
+	}
+	
+	function getPostCategories($params) {
+ 		$categories = array();
+		
+		$postid = $params[0];
+		
+		// grab the page & the entry id
+		list($page, $slug) = $this->parsePostId($postid);
+		
+		// grab the recent posts
+		$content_set = ContentService::getContentByURL(URL::assemble($page, $slug));
+		
+		//get content
+		$content_array = $content_set->get( false, false );
+
+		$content = $content_array[0];
+
+		foreach ($content['categories'] as $category) {
+			$this->log->debug($category);
+			$categories[] = array(
+				'categoryId' => $category,
+				'categoryName' => $category,
+				'isPrimary' => false,
+				);
+		}
+		
+		return $categories;
+	}
+	
+	function supportedTextFilters($params) {
+		$textFilters = array();
+		
+		return $textFilters;
 	}
 }
 ?>
