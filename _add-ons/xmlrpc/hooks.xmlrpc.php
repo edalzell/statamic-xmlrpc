@@ -19,6 +19,28 @@ class Hooks_xmlrpc extends Hooks
 {
 	private $server;
 	
+    public function xmlrpc__rsd() {
+
+        $siteURL = Config::getSiteURL();
+        echo <<<RSD
+<?xml version="1.0" encoding="UTF-8"?>
+<rsd version="1.0" xmlns="http://archipelago.phrasewise.com/rsd">
+<service>
+<engineName>Statamic XML-RPC</engineName>
+<engineLink>https://github.com/edalzell/statamic-xmlrpc/</engineLink>
+<homePageLink>$siteURL</homePageLink>
+<apis>
+<api name="WordPress" blogID="blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="Movable Type" blogID="blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="MetaWeblog" blogID="blog" preferred="true" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="Blogger" blogID="blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+</apis>
+</service>
+</rsd>
+RSD;
+
+    }
+
 	public function xmlrpc__api()
 	{
 		// register the callback and process the POST request
