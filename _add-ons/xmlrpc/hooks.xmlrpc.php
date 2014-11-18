@@ -1,12 +1,17 @@
 <?php
 require_once 'vendor/IXR_Library.php';
 
+// Utility functions
+function is_set($arr, $field) {
+  return (isset($arr[$field]) && (count($arr[$field]) > 0));
+}
+	
 // used to hold an entry
 class Entry
 {
 	public $title = '';
-	public $categories = array();
-	public $tags = array();
+	public $categories = '';
+	public $tags = '';
 	public $content = '';
 	public $post_status = 'publish';
 	public $link = null;
@@ -18,9 +23,12 @@ class Hooks_xmlrpc extends Hooks
 	private $link_custom_field;
 	private $current_user;
 	
+	// https://github.com/danielberlinger/rsd
     public function xmlrpc__rsd() {
 
         $siteURL = Config::getSiteURL();
+        $blog = $this->fetchConfig('blog', 'blog');
+
         echo <<<RSD
 <?xml version="1.0" encoding="UTF-8"?>
 <rsd version="1.0" xmlns="http://archipelago.phrasewise.com/rsd">
@@ -29,8 +37,10 @@ class Hooks_xmlrpc extends Hooks
 <engineLink>https://github.com/edalzell/statamic-xmlrpc/</engineLink>
 <homePageLink>$siteURL</homePageLink>
 <apis>
-<api name="MetaWeblog" blogID="blog" preferred="true" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
-<api name="Blogger" blogID="blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="Movable Type" blogID="$blog" preferred="true" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="MovableType" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="MetaWeblog" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
+<api name="Blogger" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
 </apis>
 </service>
 </rsd>
@@ -47,20 +57,26 @@ RSD;
 
 		// register the callback and process the POST request
 		$this->server = new IXR_Server(array(
-					'metaWeblog.getPost' => array($this, 'getPost'),
-					'metaWeblog.newPost'  => array($this, 'newPost'),
-					'metaWeblog.editPost' => array($this, 'editPost'),
-					'metaWeblog.deletePost' => array($this, 'deletePost'),
-					'metaWeblog.getCategories' => array($this, 'getCategories'),
-					'mt.getCategoryList' => array($this, 'getCategories'),
-					'metaWeblog.getRecentPosts' => array($this, 'getRecentPosts'),
-					'blogger.deletePost' => array($this, 'deletePost'),
-					'mt.supportedTextFilters' => array($this, 'supportedTextFilters'),
-					'mt.getPostCategories' => array($this, 'getPostCategories'),
-					
-					//Wordpress
-					'wp.getUsersBlogs' => array($this, 'getUsersBlogs'),
-				));
+            'metaWeblog.getPost' => array($this, 'getPost'),
+            'metaWeblog.newPost'  => array($this, 'newPost'),
+            'metaWeblog.editPost' => array($this, 'editPost'),
+            'metaWeblog.deletePost' => array($this, 'deletePost'),
+            'metaWeblog.getCategories' => array($this, 'getCategories'),
+            'metaWeblog.getRecentPosts' => array($this, 'getRecentPosts'),
+            'metaWeblog.getUsersBlogs' => array($this, 'getUsersBlogs' ),
+
+            // Blogger
+            'blogger.deletePost' => array($this, 'deletePost'),
+
+            // MoveableType
+            'mt.supportedTextFilters' => array($this, 'supportedTextFilters'),
+            'mt.getPostCategories' => array($this, 'getPostCategories'),
+            'mt.setPostCategories' => array($this, 'setPostCategories'),
+            'mt.getCategoryList' => array($this, 'getCategories'),
+        
+            // Wordpress
+            'wp.getUsersBlogs' => array($this, 'getUsersBlogs'),
+        ));
 	}
 	
 	private function authenticate($username, $password) {
@@ -86,12 +102,7 @@ RSD;
 	
 	// from a page and an entry slug, create the full path
 	private function getFullPath($folder, $slug) {
-	
-		// create the file path
-		$page_path = Path::resolve($folder . '/' . $slug);
-		$path = Path::assemble(BASE_PATH, Config::getContentRoot(), $page_path . '.' . Config::getContentType());
-		
-		return $path;
+		return Path::assemble(BASE_PATH, Config::getContentRoot(), $folder, $slug . '.' . Config::getContentType());
 	}
 
 	private function makePostId($blog, $slug) {
@@ -120,6 +131,7 @@ RSD;
 	        $entry['author'] = $this->getUsername();
 	    }
 	    
+	    
 		$post = array(
 			'postid' => $this->makePostId($entry['_folder'], $entry['slug']),
 			'title' =>  $entry['title'],
@@ -127,7 +139,7 @@ RSD;
 			'link' => $entry['url'],
 			'permaLink' => $entry['permalink'],
 			'categories' => isset($entry['categories']) ? $entry['categories'] : null,
-			'dateCreated' => date('Y-m-d-Hi', $entry['datestamp']),
+			'dateCreated' => date(DateTime::ISO8601, $entry['datestamp']),
 			'post_status' => $this->getEntryStatus($entry),
 			'custom_fields' => array(
 			    array(
@@ -154,11 +166,11 @@ RSD;
 			$entry->content = $post['description'];
 		}
 		
-		if (isset($post['categories']) && (count($post['categories']) > 0)) {
+		if (is_set($post, 'categories')) {
 			$entry->categories = $post['categories'];
 		}
 		
-		if (isset($post['tags']) && (count($post['tags']) > 0)) {
+		if (is_set($post, 'tags')) {
 			$entry->tags = $post['tags'];
 		}
 		
@@ -166,7 +178,7 @@ RSD;
 			$entry->post_status = $post['post_status'];
 		}
 		
-		if (isset($post['custom_fields']) && (count($post['custom_fields']) > 0)) {
+		if (is_set($post, 'custom_fields')) {
 		    foreach ($post['custom_fields'] as $field) {
                 if ($field['key'] === $link_custom_field) {
                     $entry->link = $field['value'];
@@ -177,6 +189,39 @@ RSD;
                     break;
                 }
 		    }
+		// if there are no custom fields, we still need to set the author
+		} else {
+		    $entry->author = $this->getUsername();
+		}
+		return $entry;
+	}
+	
+	private function convertContentToEntry($content) {
+	    global $link_custom_field, $author_custom_field;
+	    
+		$entry = new Entry();
+
+		// get the entry data
+		$entry->title = $content['title'];
+		
+		if (isset($content['content_raw'])) {
+			$entry->content = $content['content_raw'];
+		}
+		
+		if (is_set($content, 'categories')) {
+			$entry->categories = $content['categories'];
+		}
+		
+		if (is_set($content, 'tags')) {
+			$entry->tags = $content['tags'];
+		}
+		
+		if (isset($content['link'])) {
+            $entry->link = $content['link'];
+        }
+
+        if (isset($content['author'])) {
+            $entry->author = $content['author'];
 		// if there are no custom fields, we still need to set the author
 		} else {
 		    $entry->author = $this->getUsername();
@@ -202,28 +247,11 @@ RSD;
  		File::put($path, File::buildContent($data, $entry->content));
 	}
 	
-	// see spec here: http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getPost
-	function getPost($params) {
-	    list($postid, $username, $password) = $params;
-
-		$this->authenticate($username, $password);
-		
-		// parse out the page & the entry id
-		list($page, $slug) = $this->parsePostId($postid);
-		
-		// TODO - is this the right way to do this???
-		$url = Config::getSiteRoot() . $page . '/' . $slug;
-
-		//convert entry to MetaWeblog post
-		return $this->convertEntryToPost(Content::get($url));
-	}
-	
-	
 	// see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getRecentPosts
 	function getRecentPosts($params) {
 		$posts = array();
 		
-	    list($blog, $username, $password) = $params;
+	    list($blog, $username, $password, $limit) = $params;
  
         $this->authenticate( $username, $password );
         		
@@ -237,25 +265,38 @@ RSD;
 		$content_set->sort();
 		
 		// restrict to passed in limit.
-		$content_set->limit($params[3]);
+		$content_set->limit($limit);
 		
 		//get content
-		$content_array = $content_set->get( true, false );
+		$content_array = $content_set->get(true, false);
 
 		// loop through each entry and convert to a post
-		$x = 0;
 		foreach ($content_array as $entry) {
-			$posts[$x++] = $this->convertEntryToPost($entry);	
+			$posts[] = $this->convertEntryToPost($entry);	
 		}
 				
 		return $posts;
 	}
 	
+	// see spec here: http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getPost
+	function getPost($params) {
+	    list($postid, $username, $password) = $params;
+
+		$this->authenticate($username, $password);
+		
+		// parse out the page & the entry id
+		list($page, $slug) = $this->parsePostId($postid);
+		
+		//convert entry to MetaWeblog post
+		return $this->convertEntryToPost(Content::get(URL::assemble($page, $slug)));
+	}
+	
+	
 	// see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.newPost
 	function newPost($params) {
 		// pull data out of POST params
 		// page is folder to save to
-		list($page, $username, $password, $struct) = $params;
+		list($page, $username, $password, $post) = $params;
 		
 		$this->authenticate($username, $password);
 		
@@ -278,7 +319,7 @@ RSD;
  		}
 
 		// get the entry data
-		$entry = $this->convertPostToEntry($struct);
+		$entry = $this->convertPostToEntry($post);
 
  		// the slug comes from the title in lowercase with '-' as a delimiter
  		$slug = Slug::make($entry->title, array('lowercase' => true));
@@ -296,27 +337,50 @@ RSD;
 
 	// see - http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.editPost
 	function editPost($params) {
-		// pull data out of POST params
-		// blogid is folder to save to
-		list($postid, $username, $password, $struct, $publish) = $params;
+		// parse the POST params
+		list($postid, $username, $password, $post, $publish) = $params;
 
         $this->authenticate($username, $password);
         
 		list($page, $slug) = $this->parsePostId($postid);
 
-		// get the entry data
-		$entry = $this->convertPostToEntry($struct);
+        /*
+            To properly set the categories in Moveable Type:
+                1) metaWeblog.editPost - no categories are passed & publish is false
+                2) mt.setPostCategories - to set the categories 
+                3) metaWeblog.editPost - no categories are passed & publish is true
 
- 		$fullpath = $this->getFullPath($page, $slug );
+            Reasoning:
+                The 2nd editPost was (is? in some cases?) because the way Movable Type
+                worked it would not republish a blog as static files unless the "publish" 
+                flag was true, and you couldn't set categories until after a post was 
+                added. So the workaround was to send a post, set the categories, and then 
+                change the "publish" flag to true (with another editPost call). 
 
- 		$this->saveEntryToFile($entry, $fullpath);
+            So, what we nee do to is check to see if we are doing MT by checking to see
+            if the categories are blank. If so, then when we receive the 'true' publish
+            parameter, retain the categories that are in the file alread
+        */
+
+   		$content = Content::get(URL::assemble($page, $slug));
+
+        // only get the categories if they are NOT sent AND the publish param is true
+        if (!is_set($post, 'categories') && $publish) {
+            // add them to the struct so they will be written to the file
+            $post['categories'] = $content['categories'];
+        }
+        
+		// convert to a Statamic entry
+		$entry = $this->convertPostToEntry($post);
+
+ 		$this->saveEntryToFile($entry, $content['_file']);
 
 		return true;
 	}
 	
 	//see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.deletePost
 	function deletePost($params) {
-	    list($garbase, $postid, $username, $password) = $params;
+	    list($ignored, $postid, $username, $password) = $params;
 
 		$this->authenticate($username, $password);
 		
@@ -335,64 +399,78 @@ RSD;
 
 	// see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getCategories
 	function getCategories($params) {
-		$categories = array();
-		
-		$blog = $params[0];
-		
-		$taxonomy_set = ContentService::getTaxonomiesByType('categories');
-		$taxonomy_set->sort();
+	    list($blog, $username, $password) = $params;
 
-		$taxonomies = $taxonomy_set->get();
-				
-		$x = 0;
+		$this->authenticate($username, $password);
+
+		$taxonomy = ContentService::getTaxonomiesByType('categories');
+		$taxonomy->sort();
+		
+		$taxonomies = $taxonomy->get();
+
+		$categories = array();
 		foreach ($taxonomies as $taxonomy) {
-			$categories[$x++] = array(
-				'categoryId' => $taxonomy['name'],
-				'categoryName' => $taxonomy['name'],
-				);
+			$categories[] = array('categoryId' => $taxonomy['name'], 'categoryName' => $taxonomy['name']);
 		}
 		
 		return $categories;
 	}
 	
 	function getPostCategories($params) {
- 		$categories = array();
-		
-		$postid = $params[0];
+	    list($postid, $username, $password) = $params;
+
+		$this->authenticate($username, $password);
 		
 		// grab the page & the entry id
 		list($page, $slug) = $this->parsePostId($postid);
 		
-		// grab the recent posts
-		$content_set = ContentService::getContentByURL(URL::assemble($page, $slug));
-		
-		//get content
-		$content_array = $content_set->get( false, false );
+		$content = Content::get(URL::assemble($page, $slug));
 
-		$content = $content_array[0];
-
-		foreach ($content['categories'] as $category) {
-			$categories[] = array(
-				'categoryId' => $category,
-				'categoryName' => $category,
-				'isPrimary' => false,
-				);
-		}
+ 		$categories = array();
+		if (is_set($content, 'categories')) {
+            foreach ($content['categories'] as $category) {
+                $categories[] = array(
+                    'categoryId' => $category,
+                    'categoryName' => $category,
+                    'isPrimary' => false,
+                    );
+            }
+        }
 		
 		return $categories;
 	}
 	
-	function supportedTextFilters($params) {
-		$textFilters = array();
+	function setPostCategories($params) {
+		list($postid, $username, $password, $struct) = $params;
+
+        $this->authenticate($username, $password);
+        
+		list($page, $slug) = $this->parsePostId($postid);
+
+		// get the content
+		$content = Content::get(URL::assemble($page, $slug));
 		
-		return $textFilters;
+		$entry = $this->convertContentToEntry($content, true, false);
+
+		$entry->categories = array();
+		foreach ($struct as $cat_details) {
+			$entry->categories[] = $cat_details['categoryId'];
+		}
+		
+ 		$this->saveEntryToFile($entry, $content['_file']);
+
+		return true;
+
+		
 	}
-	
-	function getUsersBlogs( $params ) {
-	    $this->authenticate($params[0],$params[1]);
+
+	// see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getUsersBlogs
+	function getUsersBlogs($params) {
+		list($username, $password) = $params;
+	    $this->authenticate($username, $password);
 	    
 	    // get only the top level folders
-	    $folders = ContentService::getContentTree('/',1);
+	    $folders = ContentService::getContentTree('/', 1);
 	    
         /*
         struct
@@ -413,9 +491,13 @@ RSD;
 	            'xmlrpc' => $siteURL.'/TRIGGER/xmlrpc/api',
 	            'isAdmin' => true
 	        );
-	        $blogs[] = ($item);
+	        $blogs[] = $item;
 	    }
 	    
 	    return $blogs;
+	}
+
+	function supportedTextFilters($params) {
+		return array();
 	}
 }
