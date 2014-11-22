@@ -1,0 +1,47 @@
+[
+    {
+        "name": "lsmonki/php-ixr",
+        "version": "1.7.5",
+        "version_normalized": "1.7.5.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/lsmonki/php-ixr.git",
+            "reference": "7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/lsmonki/php-ixr/zipball/7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6",
+            "reference": "7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=4.3.0"
+        },
+        "time": "2014-08-09 22:15:47",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "classmap": [
+                "IXR_Library.php"
+            ]
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "BSD"
+        ],
+        "authors": [
+            {
+                "name": "Incutio Ltd 2010 - Simon Willison",
+                "homepage": "http://scripts.incutio.com/xmlrpc/"
+            }
+        ],
+        "description": "Incutio XML-RPC library (IXR)",
+        "homepage": "http://scripts.incutio.com/xmlrpc/",
+        "keywords": [
+            "remote procedure call",
+            "rpc",
+            "xlm-rpc",
+            "xmlrpc"
+        ]
+    }
+]

@@ -1,5 +1,5 @@
 <?php
-require_once 'vendor/IXR_Library.php';
+require_once 'vendor/autoload.php';
 
 // Utility functions
 function is_set($arr, $field) {

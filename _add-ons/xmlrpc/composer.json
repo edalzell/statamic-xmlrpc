@@ -1,0 +1,5 @@
+{
+    "require": {
+        "lsmonki/php-ixr": ">=1.7.5"
+    }
+}

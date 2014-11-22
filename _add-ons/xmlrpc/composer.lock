@@ -1,0 +1,60 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "cf45d0b50ee3e15a1338ffefb408f749",
+    "packages": [
+        {
+            "name": "lsmonki/php-ixr",
+            "version": "1.7.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/lsmonki/php-ixr.git",
+                "reference": "7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/lsmonki/php-ixr/zipball/7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6",
+                "reference": "7d605c8f5a2ec8157fa83cdcba2ce3b06b5b3bc6",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=4.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "IXR_Library.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "authors": [
+                {
+                    "name": "Incutio Ltd 2010 - Simon Willison",
+                    "homepage": "http://scripts.incutio.com/xmlrpc/"
+                }
+            ],
+            "description": "Incutio XML-RPC library (IXR)",
+            "homepage": "http://scripts.incutio.com/xmlrpc/",
+            "keywords": [
+                "remote procedure call",
+                "rpc",
+                "xlm-rpc",
+                "xmlrpc"
+            ],
+            "time": "2014-08-09 22:15:47"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "platform": [],
+    "platform-dev": []
+}
