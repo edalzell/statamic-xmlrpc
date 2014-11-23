@@ -109,7 +109,7 @@ RSD;
     
     // from a page and an entry slug, create the full path
     private function getFullPath($folder, $slug) {
-        return Path::assemble(BASE_PATH, Config::getContentRoot(), $folder, $slug . '.' . Config::getContentType());
+        return Path::assemble(BASE_PATH, Config::getContentRoot(), Path::resolve($folder . '/' . $slug) . '.' . Config::getContentType());;
     }
 
     private function makePostId($blog, $slug) {
@@ -335,7 +335,9 @@ RSD;
 
         $fullpath = $this->getFullPath($page_path, $filename);
         
-        $this->saveEntryToFile($entry, $fullpath);
+        $prefix = $entry->post_status == 'draft' ? "__" : "";
+        
+        $this->saveEntryToFile($entry, $prefix . $fullpath);
         
         // this should be unique so clients can use this as the key.
         return $this->makePostId($page, $slug);
