@@ -65,8 +65,10 @@ RSD;
                 'metaWeblog.getCategories' => array($this, 'getCategories'),
                 'metaWeblog.getRecentPosts' => array($this, 'getRecentPosts'),
                 'metaWeblog.getUsersBlogs' => array($this, 'getUsersBlogs' ),
+                'metaWeblog.newMediaObject' => array($this, 'newMediaObject' ),
 
                 // Blogger
+                'blogger.getUsersBlogs' => array($this, 'getUsersBlogs'),
                 'blogger.deletePost' => array($this, 'deletePost'),
 
                 // MoveableType
@@ -109,7 +111,7 @@ RSD;
     
     // from a page and an entry slug, create the full path
     private function getFullPath($folder, $slug) {
-        return Path::assemble(BASE_PATH, Config::getContentRoot(), Path::resolve($folder . '/' . $slug) . '.' . Config::getContentType());;
+        return Path::assemble(BASE_PATH, Config::getContentRoot(), Path::resolve($folder . '/' . $slug) . '.' . Config::getContentType());
     }
 
     private function makePostId($blog, $slug) {
@@ -253,7 +255,7 @@ RSD;
         File::put($path, File::buildContent($data, $entry->content));
     }
     
-    // see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getRecentPosts
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getRecentPosts
     function getRecentPosts($params) {
         $posts = array();
         
@@ -284,7 +286,7 @@ RSD;
         return $posts;
     }
     
-    // see spec here: http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getPost
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getPost
     function getPost($params) {
         list($postid, $username, $password) = $params;
 
@@ -298,7 +300,7 @@ RSD;
     }
     
     
-    // see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.newPost
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.newPost
     function newPost($params) {
         // pull data out of POST params
         // page is folder to save to
@@ -343,7 +345,7 @@ RSD;
         return $this->makePostId($page, $slug);
     }
 
-    // see - http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.editPost
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.editPost
     function editPost($params) {
         // parse the POST params
         list($postid, $username, $password, $post, $publish) = $params;
@@ -386,7 +388,7 @@ RSD;
         return true;
     }
     
-    //see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.deletePost
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.deletePost
     function deletePost($params) {
         list($ignored, $postid, $username, $password) = $params;
 
@@ -405,7 +407,7 @@ RSD;
         return true;
     }
 
-    // see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getCategories
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getCategories
     function getCategories($params) {
         list($blog, $username, $password) = $params;
 
@@ -472,9 +474,10 @@ RSD;
         
     }
 
-    // see http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getUsersBlogs
+    // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getUsersBlogs and
+    // https://codex.wordpress.org/XML-RPC_Blogger_API#blogger.getUsersBlogs
     function getUsersBlogs($params) {
-        list($username, $password) = $params;
+        list($ignored, $username, $password) = $params;
         $this->authenticate($username, $password);
         
         // get only the top level folders
@@ -503,6 +506,32 @@ RSD;
         }
         
         return $blogs;
+    }
+    
+    // https://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.newMediaObject
+    function newMediaObject($params) {
+        list($notused, $username, $password, $data) = $params;
+
+        $this->authenticate($username, $password);
+                
+        // if there's no image data, it's because the client thinks it's already uploaded.
+        // Just return the URL
+        if (isset($data['bits'])) {
+            $fullpath = Path::assemble(BASE_PATH, 'assets', 'img', $data['name']);
+        
+            // no need to decode
+            file_put_contents($fullpath, $data['bits']);
+        }
+        
+        $imgdata['file'] = $data['name'];
+        $imgdata['url'] = URL::assemble('assets', 'img', $data['name']);
+        $imgdata['type'] = $data['type'];
+        
+        return($imgdata);
+    }
+    
+    function supportedMethods($params) {
+        return $functions;
     }
 
     function supportedTextFilters($params) {
