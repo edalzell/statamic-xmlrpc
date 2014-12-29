@@ -288,11 +288,19 @@ RSD;
         // Front matter
         $data = array(
           'title' => $entry->title,
-          'categories' => $entry->categories,
-          'tags' => $entry->tags,
           'author' => $entry->author,
         );
         
+        // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
+        if (is_set($entry, 'categories') {
+            $data['categories'] = $entry->categories;
+        }
+
+        // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
+        if (is_set($entry, 'tags') {
+            $data['tags'] = $entry->tags;
+        }
+
         if (isset($entry->link) && !empty($entry->link)) {
             $data['link'] = $entry->link;
         }
