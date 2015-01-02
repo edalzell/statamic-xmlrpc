@@ -292,12 +292,12 @@ RSD;
         );
         
         // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
-        if (is_set($entry, 'categories') {
+        if (is_set($entry, 'categories')) {
             $data['categories'] = $entry->categories;
         }
 
         // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
-        if (is_set($entry, 'tags') {
+        if (is_set($entry, 'tags')) {
             $data['tags'] = $entry->tags;
         }
 
