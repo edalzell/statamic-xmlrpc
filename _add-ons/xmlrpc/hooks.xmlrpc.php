@@ -16,8 +16,8 @@ class StatamicEntry
     const HIDDEN = 'hidden';
     
     public $title = '';
-    public $categories = '';
-    public $tags = '';
+    public $categories = null;
+    public $tags = null;
     public $content = '';
     public $post_status = StatamicEntry::PUBLISH;
     public $link = null;
@@ -292,12 +292,12 @@ RSD;
         );
         
         // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
-        if (is_set($entry, 'categories')) {
+        if (isset($entry->categories) && (count($entry->categories) > 0)) {
             $data['categories'] = $entry->categories;
         }
 
         // work around this issue: http://lodge.statamic.com/support/698-statamic-thinks-empty-taxonomy-is-not-em
-        if (is_set($entry, 'tags')) {
+        if (isset($entry->tags) && (count($entry->tags) > 0)) {
             $data['tags'] = $entry->tags;
         }
 
