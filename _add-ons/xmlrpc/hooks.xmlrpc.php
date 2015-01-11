@@ -87,13 +87,57 @@ RSD;
         ));
     }
     
+    private function makeFilename($folder, $title, $status) {
+        // create the file path
+        $page_path = Path::resolve($folder);
+        
+
+        // create the appropriate prefix
+        $entry_type = Statamic::get_entry_type($page_path);
+
+        $order_prefix = "";
+        if ($entry_type == 'date') {
+            if (Config::get('_entry_timestamps')) {
+                $order_prefix = date('Y-m-d-Hi-');
+            }
+            else {
+                $order_prefix = date('Y-m-d-');
+            }
+        } else if ($entry_type == 'number') {
+            $order_prefix = Statamic::get_next_numeric($page_path) . "-";
+        }
+
+        // the slug comes from the title in lowercase with '-' as a delimiter
+        $slug = Slug::make($title, array('lowercase' => true));
+
+        // get the status prefix from the post status
+        $status_prefix = Slug::getStatusPrefix($status);
+
+        // make the file name
+        return $status_prefix . $order_prefix . $slug . '.' . Config::getContentType();
+    }
+    
+    private function makeFullPath($folder, $title, $status) {
+        return Path::assemble(BASE_PATH,
+                              Config::getContentRoot(), 
+                              Path::resolve($folder),
+                              makeFilename($folder, $title, $status));
+    }
+    
+    // from a page and an StatamicEntry slug, create the full path
+    private function getFullPath($folder, $slug) {
+        return Path::assemble(BASE_PATH,
+                              Config::getContentRoot(), 
+                              Path::resolve($folder . DIRECTORY_SEPARATOR . $slug) . '.' . Config::getContentType());
+    }
+
     private function authenticate($username, $password) {
         
         // attempt to load the Member object
         $user = Auth::getMember($username);
         
         // if no Member object, or checkPassword fails, return an error
-        if (!$user || !$user->checkPassword($password)) {
+        if (!$user || !$user->checkPassword($password) || ($user->hasRole('admin') === false)) {
             $error = new IXR_Error(403, "Incorrect username or password");
             
             // halt immediately stop and send back a response
@@ -104,11 +148,6 @@ RSD;
         $this->current_user = $username;
     }
     
-    // from a page and an StatamicEntry slug, create the full path
-    private function getFullPath($folder, $slug) {
-        return Path::assemble(BASE_PATH, Config::getContentRoot(), Path::resolve($folder . '/' . $slug) . '.' . Config::getContentType());
-    }
-
     private function makePostId($blog, $slug) {
         return $blog . '#' . $slug;
     }
@@ -451,11 +490,12 @@ RSD;
         list($postid, $username, $password) = $params;
 
         $this->authenticate($username, $password);
-        
+
         list($page, $slug) = $this->parsePostId($postid);
-        
+
         $this->changeStatus($page, $slug, StatamicEntry::PUBLISH);
-       
+
+        return true;
     }
     
     // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.deletePost
@@ -546,8 +586,6 @@ RSD;
         $this->saveEntryToFile($entry, $content['_file']);
 
         return true;
-
-        
     }
 
     // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getUsersBlogs and
