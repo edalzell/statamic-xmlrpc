@@ -22,3 +22,7 @@ A Statamic add-on that allows you to post from a MoveableType client, like MarsE
 * No support for tags.
 * Cannot rename post.
 * No support for hidden posts.
+
+## LICENSE
+
+[MIT License](http://emd.mit-license.org)
