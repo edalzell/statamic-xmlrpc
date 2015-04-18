@@ -91,7 +91,6 @@ RSD;
         // create the file path
         $page_path = Path::resolve($folder);
         
-
         // create the appropriate prefix
         $entry_type = Statamic::get_entry_type($page_path);
 
@@ -156,7 +155,7 @@ RSD;
         return explode('#', $postid);
     }
     
-    /* statamic only has 3 statuses: publish, draft, hidden, but we might receive
+    /* Statamic only has 3 statuses: publish, draft, hidden, but we might receive
        anyone of these statuses: http://codex.wordpress.org/Post_Status_Transitions
        so we have to map appropriately:
        
@@ -236,6 +235,7 @@ RSD;
         return $post;
     }
     
+    // convert from XMLRPC to Statamic entry
     private function convertPostToEntry($post, $publish=true) {
         $entry = new StatamicEntry();
 
@@ -274,6 +274,7 @@ RSD;
         return $entry;
     }
     
+    // convert from content to an entry we can write to a file
     private function convertContentToEntry($content) {
         $entry = new StatamicEntry();
 
@@ -345,6 +346,8 @@ RSD;
         }
         
         File::put($path, File::buildContent($data, $entry->content));
+        
+//        $this->addon->api('relative_cache_buster')->regenerateCache('blog');
     }
     
     // http://codex.wordpress.org/XML-RPC_MetaWeblog_API#metaWeblog.getRecentPosts
@@ -468,7 +471,8 @@ RSD;
         $content = Content::get(URL::assemble($page, $slug));
 
         // only get the categories if they are NOT sent AND the publish param is true
-        if (!is_set($post, 'categories') && $publish) {
+        // AND there are categories to set
+        if (!is_set($post, 'categories') && is_set($post, 'categories') && 	$publish) {
             // add them to the struct so they will be written to the file
             $post['categories'] = $content['categories'];
         }
