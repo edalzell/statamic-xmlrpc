@@ -474,7 +474,7 @@ RSD;
         }
         
         // convert to a Statamic Entry
-        $entry = $this->convertPostToEntry($post);
+        $entry = $this->convertPostToEntry($post, $publish);
 
         $this->saveEntryToFile($entry, $content['_file']);
      
