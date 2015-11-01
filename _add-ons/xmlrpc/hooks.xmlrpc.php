@@ -36,24 +36,25 @@ class Hooks_xmlrpc extends Hooks
 
         $siteURL = Config::getSiteURL();
         $blog = $this->fetchConfig('blog', 'blog');
+        
+        $api_str = 'blogID="'.$blog.'" preferred="true" apiLink="'.$siteURL.'/TRIGGER/xmlrpc/api" />';
 
-        echo <<<RSD
-<?xml version="1.0" encoding="UTF-8"?>
-<rsd version="1.0" xmlns="http://archipelago.phrasewise.com/rsd">
-<service>
-<engineName>Statamic XML-RPC</engineName>
-<engineLink>https://github.com/edalzell/statamic-xmlrpc/</engineLink>
-<homePageLink>$siteURL</homePageLink>
-<apis>
-<api name="Movable Type" blogID="$blog" preferred="true" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
-<api name="MovableType" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
-<api name="MetaWeblog" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
-<api name="Blogger" blogID="$blog" preferred="false" apiLink="$siteURL/TRIGGER/xmlrpc/api" />
-</apis>
-</service>
-</rsd>
-RSD;
-
+		$rsd = '<?xml version="1.0" encoding="UTF-8"?>';
+		$rsd .= '<rsd version="1.0" xmlns="http://archipelago.phrasewise.com/rsd">';
+		$rsd .= '<service>';
+		$rsd .= '<engineName>Statamic XML-RPC</engineName>';
+		$rsd .= '<engineLink>https://github.com/edalzell/statamic-xmlrpc/</engineLink>';
+		$rsd .= '<homePageLink>'.$siteURL.'</homePageLink>';
+		$rsd .= '<apis>';
+		$rsd .= '<api name="Movable Type" '.$api_str;
+		$rsd .= '<api name="MovableType" '.$api_str;
+		$rsd .= '<api name="MetaWeblog" '.$api_str;
+		$rsd .= '<api name="Blogger" '.$api_str;
+		$rsd .= '</apis>';
+		$rsd .= '</service>';
+		$rsd .= '</rsd>';
+		
+		echo $rsd;
     }
 
     public function xmlrpc__api()
@@ -472,7 +473,7 @@ RSD;
 
         // only get the categories if they are NOT sent AND the publish param is true
         // AND there are categories to set
-        if (!is_set($post, 'categories') && is_set($post, 'categories') && 	$publish) {
+        if (!is_set($post, 'categories') && is_set($content, 'categories') && $publish) {
             // add them to the struct so they will be written to the file
             $post['categories'] = $content['categories'];
         }
