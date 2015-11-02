@@ -15,6 +15,7 @@ A Statamic add-on that allows you to post from a MoveableType client, like MarsE
 5. Hook up MarsEdit to your site.
   * if you copied the xmlrpc.php file, everything **should** be detected properly.
   * if auto-detection doesn't work use **Moveable Type API** as the **System API** and http://yoursite.com/TRIGGER/xmlrpc/api as the endpoint.
+  * the name of the folder used for your blog without the prefix (i.e. `blog` **not** `2-blog`) as the Blog ID  
 6. Add the custom fields (be sure to use the same names as you did in the config file).
 
 ## What's missing:
